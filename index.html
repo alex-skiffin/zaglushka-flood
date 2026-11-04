@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ГидроРиск — Сайт на реконструкции</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #00a8e8;
+            --text-color: #333333;
+            --bg-color: #f4f7f6;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-color) 0%, #e0f7fa 100%);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            padding: 40px 20px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 86, 179, 0.1);
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+        .logo span {
+            color: var(--secondary-color);
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #555555;
+            margin-bottom: 24px;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .contact {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eeeeee;
+            font-size: 14px;
+            color: #777777;
+        }
+        .contact a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .contact a:hover {
+            text-decoration: underline;
+        }
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #004494;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🌊</div>
+        <div class="logo">Гидро<span>Риск</span></div>
+        <h1>Сайт на реконструкции</h1>
+        <p>
+            Мы временно углубились в анализ данных: обновляем алгоритмы оценки рельефа 
+            и базу истории паводков, чтобы сделать проверку участков еще точнее и быстрее. 
+            Сервис скоро вернется в работу в новом, улучшенном формате.
+        </p>
+        <p>
+            Если у вас есть срочные вопросы или вы хотите узнать о запуске первыми, 
+            напишите нам на почту.
+        </p>
+        <a href="mailto:info@gidrorisk.ru" class="btn">Написать нам</a>
+        
+        <div class="contact">
+            Или свяжитесь с нами: <a href="mailto:info@gidrorisk.ru">info@gidrorisk.ru</a><br>
+            Мы ответим в ближайшее время.
+        </div>
+    </div>
+</body>
+</html>
