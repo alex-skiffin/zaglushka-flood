@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ГидроРиск — анализ участка</title>
+    <link rel="icon" href="/favicon.ico">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <style>
+/* ── Токены ─────────────────────────────────────────── */
+:root {
+    --bg:          #f4f6f0;
+    --surface:     #ffffff;
+    --border:      rgba(0,0,0,0.08);
+    --border-mid:  rgba(0,0,0,0.13);
+    --text:        #1c2b1a;
+    --muted:       #5a6e55;
+    --faint:       #9aad96;
+    --forest:      #2d5a27;
+    --forest-d:    #245020;
+    --river:       #2a6496;
+    --warn-bg:     #fdf0ec;
+    --warn-bdr:    #e8b4a8;
+    --warn-col:    #c0392b;
+    --mid-bg:      #fef6e4;
+    --mid-bdr:     #f0d090;
+    --mid-col:     #b37309;
+    --safe-bg:     #eaf4e8;
+    --safe-bdr:    #a8d4a6;
+    --safe-col:    #2d6a2d;
+            /* Новая палитра — природно-земляная */
+            --gr-bg: #f4f6f0;
+            /* светло-зелёный фон */
+            --gr-surface: #ffffff;
+            --gr-border: rgba(0, 0, 0, 0.09);
+            --gr-text: #1c2b1a;
+            /* тёмно-зелёный, читается на светлом */
+            --gr-muted: #5a6e55;
+            --gr-faint: #9aad96;
+            --gr-sand: #f0ece4;
+            /* тёплый нейтральный */
+
+            --gr-forest: #2d5a27;
+            /* основной акцент — лес */
+            --gr-forest-d: #245020;
+            /* hover */
+            --gr-river: #2a6496;
+            /* вода */
+
+            /* Статусы — семантические, не кричащие */
+            --gr-high: #c0392b;
+            --gr-high-bg: #fdf0ec;
+            --gr-high-bdr: #e8b4a8;
+            --gr-mid: #b37309;
+            --gr-mid-bg: #fef6e4;
+            --gr-mid-bdr: #f0d090;
+            --gr-low: #2d6a2d;
+            --gr-low-bg: #eaf4e8;
+            --gr-low-bdr: #a8d4a6;
+        }
+
+        /* ── Сброс и база ────────────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Golos Text', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+
+        /* ── Хедер ── */
+        #header {
+            background: #1a5276;
+            color: white;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        #header h1 {
+            font-size: 15px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        #header-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        #cadastre-search {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #cadastre-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: white;
+            font-size: 13px;
+            font-family: 'Golos Text', sans-serif;
+            padding: 5px 4px 5px 10px;
+            width: 190px;
+        }
+
+        #cadastre-input::placeholder {
+            color: rgba(255, 255, 255, 0.55);
+        }
+
+        #cadastre-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 13px;
+            padding: 5px 10px;
+            cursor: pointer;
+            opacity: 0.85;
+            transition: opacity .15s, background .15s;
+        }
+
+        #cadastre-btn:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        #cadastre-btn:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        /* Ошибка поиска — всплывает под хедером, тем же языком, что map-hint */
+        #cadastre-err {
+            position: absolute;
+            top: 54px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: var(--warn-col);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 24px;
+            font-size: 13px;
+            z-index: 600;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s, transform .2s;
+            white-space: nowrap;
+        }
+
+        #cadastre-err.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        #region-select {
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 13px;
+            cursor: pointer;
+            max-width: 200px;
+        }
+
+        #region-select option {
+            background: #1a5276;
+            color: white;
+        }
+
+        /* ── User bar ── */
+        #user-bar {
+            background: #154360;
+            color: white;
+            padding: 4px 16px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        #user-bar .ub-email {
+            opacity: 0.8;
+            font-size: 11px;
+        }
+
+        #user-bar .ub-plan {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        #user-bar .ub-plan.paid {
+            background: #27ae60;
+        }
+
+        #ub-quota.warn {
+            color: #f39c12;
+            font-weight: bold;
+        }
+
+        #login-btn {
+            margin-left: auto;
+            padding: 4px 14px;
+            background: white;
+            color: #1a5276;
+            border: none;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #logout-btn {
+            padding: 3px 10px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        #logout-btn:hover {
+            color: white;
+            border-color: white;
+        }
+
+        /* ── Карта на весь экран ── */
+        /* ── Строка "карта + панель" — настоящие колонки, не оверлей ── */
+        #main-row {
+            flex: 1;
+            display: flex;
+            min-height: 0;   /* иначе flex-дети не сжимаются, а вылезают за экран */
+        }
+
+        #map-area {
+            flex: 1;
+            position: relative;
+            min-width: 0;    /* иначе карта не даёт панели места, а вылезает сама */
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ── Подсказка на карте ── */
+        #map-hint {
+            position: absolute;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(26, 82, 118, 0.92);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 500;
+            white-space: nowrap;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            transition: opacity .3s;
+        }
+
+        #map-hint.hidden {
+            opacity: 0;
+        }
+
+        /* ── Индикатор загрузки на карте ── */
+        #map-loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 16px 28px;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #1a5276;
+            font-weight: bold;
+            z-index: 600;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ── Модалки (общие) ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal-box {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 420px;
+            max-height: 92vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        /* Кнопка закрытия модалки */
+        .modal-close {
+            position: absolute;
+            top: 14px;
+            right: 16px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            background: #e0e0e0;
+        }
+
+        .modal-box h2 {
+            font-size: 18px;
+            color: #1a5276;
+            margin-bottom: 12px;
+            padding-right: 32px;
+        }
+
+        /* ── Auth modal ── */
+        .modal-tabs {
+            display: flex;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            margin-bottom: 14px;
+        }
+
+        .modal-tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            font-size: 13px;
+            cursor: pointer;
+            background: #f5f5f5;
+            border: none;
+        }
+
+        .modal-tab.active {
+            background: #1a5276;
+            color: white;
+            font-weight: bold;
+        }
+
+        .f-input {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .f-input:focus {
+            border-color: #1a5276;
+        }
+
+        .f-btn {
+            width: 100%;
+            padding: 12px;
+            background: #1a5276;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .f-btn:hover {
+            background: #154360;
+        }
+
+        .f-btn.sec {
+            background: #eee;
+            color: #333;
+            margin-top: 8px;
+        }
+
+        .f-btn.sec:hover {
+            background: #ddd;
+        }
+
+        .f-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .f-err {
+            font-size: 12px;
+            color: #e74c3c;
+            min-height: 18px;
+            margin-bottom: 6px;
+        }
+
+        .ya-btn {
+            width: 100%;
+            padding: 11px;
+            background: #ffcc00;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 12px 0;
+            color: #ccc;
+            font-size: 12px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #eee;
+        }
+
+        /* ── Paywall ── */
+        .plan-card {
+            border: 2px solid #eee;
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: border-color .2s;
+            position: relative;
+        }
+
+        .plan-card:hover,
+        .plan-card.selected {
+            border-color: #1a5276;
+        }
+
+        .plan-card.featured {
+            background: #f0f6ff;
+            border-color: #2980b9;
+        }
+
+        .plan-card .hot {
+            position: absolute;
+            top: -10px;
+            right: 12px;
+            background: #1a5276;
+            color: white;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .plan-card .pname {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .plan-card .pprice {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a5276;
+        }
+
+        .plan-card .pdesc {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .pay-btn {
+            width: 100%;
+            padding: 12px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .pay-btn:hover {
+            background: #229954;
+        }
+
+        .plan-check {
+    width:18px; height:18px; flex-shrink:0;
+    background:var(--forest); color:white;
+    border-radius:50%; font-size:11px; font-weight:700;
+    display:inline-flex; align-items:center; justify-content:center;
+    opacity:0; transition:opacity .15s;
+}
+
+        .plan-card.selected .plan-check {
+            opacity: 1;
+        }
+
+        /* ── Результаты модалка ── */
+        #result-modal .modal-box {
+            max-width: 480px;
+            padding: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* ── Боковая панель вместо модалки результата (десктоп) ──
+           Только #result-modal — логин/пейволл/другие .modal-overlay
+           этим медиа-запросом не задеты, остаются обычными модалками.
+           Ключевое отличие от прошлой версии: #result-modal перестаёт
+           быть position:fixed оверлеем и становится обычным flex-элементом
+           внутри #main-row — карта физически отдаёт ему место (#map-area
+           сжимается), а не просто прячется под панелью сверху. */
+        @media (min-width: 900px) {
+            #result-modal {
+                position: static;
+                display: flex;           /* всегда часть строки — не зависит от .visible */
+                background: transparent;
+                padding: 0;
+                flex: 0 0 420px;
+                width: 420px;
+                align-items: stretch;
+                justify-content: stretch;
+            }
+
+            #result-modal .modal-box {
+                width: 100%;
+                max-width: none;
+                height: 100%;
+                max-height: none;
+                border-radius: 0;
+                box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+                margin: 0;
+            }
+
+            /* Панель постоянная — "закрыть" её по сути нечего, крестик
+               только путал бы (клик всё равно просто откатывал бы к
+               пустому состоянию). На мобилке (bottom-sheet) он остаётся —
+               там это настоящее закрытие модалки. */
+            #result-close {
+                display: none;
+            }
+        }
+
+/* Шапка с координатами */
+.result-coords-bar {
+    background:var(--bg); border-bottom:1px solid var(--border);
+    padding:8px 12px 8px 18px;
+    display:flex; align-items:center; justify-content:space-between;
+}
+.result-coords-bar span { font-size:11px; color:var(--faint); font-weight:500; }
+/* Кнопка PDF-отчёта */
+#report-btn:hover:not(:disabled) {
+    background:var(--surface);
+    border-color:var(--forest);
+    color:var(--forest);
+}
+#report-btn:disabled {
+    opacity:0.5;
+    cursor:not-allowed;
+}
+#report-btn.loading {
+    opacity:0.7;
+    cursor:wait;
+}
+
+/* Кнопка закрытия внутри coords-bar — вырываем из absolute, встаёт в flex */
+.result-coords-bar .modal-close {
+    position:static;
+    flex-shrink:0;
+}
+
+        .risk-badge {
+            display: inline-block;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .badge-red {
+            background: #e74c3c;
+        }
+
+        .badge-orange {
+            background: #e67e22;
+        }
+
+        .badge-yellow {
+            background: #f39c12;
+        }
+
+        .badge-green {
+            background: #27ae60;
+        }
+
+        .risk-label {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 12px;
+        }
+
+        .stat {
+            font-size: 13px;
+            color: #444;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat b {
+            color: #222;
+        }
+
+        .result-section {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid #eee;
+        }
+
+        .result-section-title {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        /* Вкладки результатов */
+        .result-tabs {
+            display: flex;
+            gap: 4px;
+            margin-top: 14px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0;
+        }
+
+        .result-tab {
+            padding: 7px 14px;
+            font-size: 12px;
+            border: none;
+            background: transparent;
+            color: #888;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            border-radius: 6px 6px 0 0;
+            font-weight: 500;        }
+
+        .result-tab.active {
+            color: #1a5276;
+            border-bottom-color: #1a5276;
+            font-weight: bold;
+        }
+
+        .lock-ico {
+            font-size: 9px;
+            margin-left: 3px;
+            opacity: 0.55;
+        }
+
+        .result-tab-content {
+            display: none;
+            padding-top: 12px;
+        }
+
+        .result-tab-content.active {
+            display: block;
+        }
+
+        /* Чат */
+        #chat-messages {
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .msg-user {
+            background: #1a5276;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 12px 12px 2px 12px;
+            font-size: 13px;
+            align-self: flex-end;
+            max-width: 85%;
+        }
+
+        .msg-ai {
+            background: #eaf0fb;
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 12px 12px 12px 2px;
+            font-size: 13px;
+            align-self: flex-start;
+            max-width: 85%;
+            line-height: 1.5;
+        }
+
+        .msg-loading {
+            color: #aaa;
+            font-size: 12px;
+            align-self: flex-start;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input-row input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .chat-input-row input:focus {
+            border-color: #1a5276;
+        }
+
+        .chat-input-row button {
+            padding: 8px 16px;
+            background: #1a5276;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* Дисклеймер в результатах */
+        .result-disclaimer {
+            font-size: 11px;
+            color: #999;
+            line-height: 1.5;
+            padding: 6px 10px;
+            background: #fff8f0;
+            border-left: 2px solid #e67e22;
+            border-radius: 0 4px 4px 0;
+            margin-bottom: 12px;
+        }
+
+        /* История затоплений */
+        .flood-card {
+            padding: 10px 12px;
+            background: #fff8f0;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .flood-card-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .flood-card-desc {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .flood-card-src {
+            color: #aaa;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        /* ══════════════════════════════════════════════
+           ОНБОРДИНГ — затемнение + подсветка + тултип
+           ══════════════════════════════════════════════ */
+
+        /* Затемняющий оверлей */
+        #onboarding-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            pointer-events: none;
+            /* клики проходят сквозь */
+        }
+
+        #onboarding-overlay.active {
+            display: block;
+        }
+
+        /* SVG-маска с "дыркой" рисуется динамически через JS */
+
+        /* Блокирующий слой поверх всего (кроме spotlight-элемента) */
+        #onboarding-blocker {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 8999;
+            background: transparent;
+            cursor: default;
+        }
+
+        #onboarding-blocker.active {
+            display: block;
+        }
+
+        /* Подсветка активного элемента */
+        .onboarding-highlight {
+            position: relative;
+            z-index: 9100 !important;
+            border-radius: 8px;
+            box-shadow: 0 0 0 3px #3ec6f5, 0 0 0 6px rgba(62, 198, 245, 0.25) !important;
+            outline: none;
+            pointer-events: none;
+            /* не кликабелен во время обучения */
+        }
+
+        /* Тултип подсказки */
+        #onboarding-tooltip {
+            display: none;
+            position: fixed;
+            z-index: 9200;
+            max-width: 280px;
+            background: #0d2f47;
+            color: #fff;
+            border-radius: 14px;
+            padding: 16px 18px 18px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+            font-size: 14px;
+            line-height: 1.55;
+            pointer-events: auto;
+
+            /* анимация появления */
+            animation: ob-fadein 0.25s ease;
+        }
+
+        @keyframes ob-fadein {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #onboarding-tooltip.active {
+            display: block;
+        }
+
+        #onboarding-tooltip .ob-step {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.45);
+            margin-bottom: 8px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        #onboarding-tooltip .ob-text {
+            margin-bottom: 16px;
+        }
+
+        #onboarding-tooltip .ob-arrow {
+            /* стрелочка-хвостик */
+            position: absolute;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+        }
+
+        #onboarding-tooltip .ob-arrow.up {
+            top: -16px;
+            left: 24px;
+            border-bottom-color: #0d2f47;
+        }
+
+        #onboarding-tooltip .ob-arrow.down {
+            bottom: -16px;
+            left: 24px;
+            border-top-color: #0d2f47;
+        }
+
+        #onboarding-tooltip .ob-arrow.left {
+            left: -16px;
+            top: 18px;
+            border-right-color: #0d2f47;
+        }
+
+        #onboarding-tooltip .ob-btns {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        #onboarding-tooltip .ob-skip {
+            padding: 7px 14px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: color .15s, border-color .15s;
+        }
+
+        #onboarding-tooltip .ob-skip:hover {
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        #onboarding-tooltip .ob-next {
+            padding: 7px 18px;
+            background: #3ec6f5;
+            color: #0d2f47;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        #onboarding-tooltip .ob-next:hover {
+            background: #5dd0f7;
+        }
+
+        /* ── Мобильная адаптация ── */
+        /* @media (max-width: 600px) {
+            #header h1 { font-size: 13px; }
+            #header { padding: 6px 10px; gap: 8px; }
+            #region-select { max-width: 140px; font-size: 12px; }
+            #user-bar { padding: 3px 10px; font-size: 11px; }
+            #ub-email { display: none !important; }
+            .modal-box { padding: 18px 14px; border-radius: 12px; }
+            #map-hint { font-size: 12px; padding: 8px 16px; bottom: 20px; }
+        } */
+
+
+        /* ── 19. Мобильная адаптация ──────────────────────────────────────────── */
+        @media (max-width: 600px) {
+            #header h1 {
+                font-size: 13px;
+            }
+
+            #cadastre-input {
+                width: 100px;
+            }
+
+            #region-select {
+                max-width: 110px;
+                font-size: 12px;
+            }
+
+            /* Модалка результатов на мобиле — bottom sheet */
+            #result-modal {
+                align-items: flex-end;
+                padding: 0;
+            }
+
+            #result-modal .modal-box {
+                border-radius: 20px 20px 0 0;
+                max-width: 100%;
+                max-height: 85vh;
+            }
+
+            /* Рукоятка-хендл */
+            #result-modal .modal-box::before {
+                content: '';
+                display: block;
+                width: 36px;
+                height: 4px;
+                background: rgba(0, 0, 0, 0.15);
+                border-radius: 2px;
+                margin: 10px auto 0;
+            }
+
+            /* Более компактные вкладки на мобиле */
+            .result-tab {
+                padding: 8px 10px;
+                font-size: 11px;
+            }
+
+            /* Paywall bottom sheet */
+            #paywall-modal {
+                align-items: flex-end;
+                padding: 0;
+            }
+
+            #paywall-modal .modal-box {
+                border-radius: 20px 20px 0 0;
+                max-width: 100%;
+                padding-bottom: 32px;
+                /* safe area */
+            }
+        }
+
+
+        .logo {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--white);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            background: url("/favicon.ico") no-repeat center;
+            background-size: contain;
+        }
+
+        /* Координаты в шапке */
+        .result-coords-bar {
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            padding: 8px 12px 8px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Бейдж риска — переопределяем старые цвета */
+        .risk-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: inherit;
+            background: transparent;
+            border: 1.5px solid;
+        }
+
+        .risk-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+
+        /* Переопределяем старые badge-классы */
+        .badge-red {
+            background: var(--gr-high-bg) !important;
+            color: var(--gr-high) !important;
+            border-color: var(--gr-high-bdr) !important;
+        }
+
+        .badge-orange,
+        .badge-yellow {
+            background: var(--gr-mid-bg) !important;
+            color: var(--gr-mid) !important;
+            border-color: var(--gr-mid-bdr) !important;
+        }
+
+        .badge-green {
+            background: var(--gr-low-bg) !important;
+            color: var(--gr-low) !important;
+            border-color: var(--gr-low-bdr) !important;
+        }
+
+        .risk-label {
+            color: var(--gr-faint);
+            font-size: 11px;
+            margin-top: 3px;
+        }
+    </style>
+
+    <!-- Yandex.Metrika -->
+    <script type="text/javascript">
+        (function (m, e, t, r, i, k, a) { m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments) }; m[i].l = 1 * new Date(); for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } } k = e.createElement(t), a = e.getElementsByTagName(t)[0], k.async = 1, k.src = r, a.parentNode.insertBefore(k, a) })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js?id=108538996', 'ym');
+        ym(108538996, 'init', { ssr: true, webvisor: true, clickmap: true, ecommerce: 'dataLayer', referrer: document.referrer, url: location.href, accurateTrackBounce: true, trackLinks: true });
+    </script>
+    <noscript>
+        <div><img src="https://mc.yandex.ru/watch/108538996" style="position:absolute;left:-9999px;" alt="" /></div>
+    </noscript>
+</head>
+
+<body>
+
+    <!-- ── Хедер ── -->
+    <div id="header">
+        <a href="/" class="logo">
+            <div class="logo-icon"></div>
+            ГидроРиск
+        </a>
+        <div id="header-controls">
+            <div id="cadastre-search">
+                <input type="text" id="cadastre-input" placeholder="Кадастровый номер: 77:05:0003003:39" autocomplete="off">
+                <button id="cadastre-btn" title="Найти участок" aria-label="Найти участок">🔍</button>
+            </div>
+            <select id="region-select">
+                <option value="">— выберите регион —</option>
+            </select>
+        </div>
+    </div>
+    <div id="cadastre-err"></div>
+
+    <!-- ── User bar ── -->
+    <div id="user-bar">
+        <span id="ub-email" class="ub-email"></span>
+        <span id="ub-plan" class="ub-plan" style="display:none"></span>
+        <span class="ub-sep" id="ub-sep1" style="display:none">·</span>
+        <span id="ub-quota-label" style="display:none">
+            запросов: <span id="ub-quota">—</span>
+        </span>
+        <span id="ub-chat-wrap" style="display:none">
+            <span class="ub-sep">·</span> чат: <span id="ub-chat">—</span>
+        </span>
+        <button id="login-btn">Войти / Регистрация</button>
+        <button id="logout-btn" style="display:none">Выйти</button>
+    </div>
+
+    <!-- ── Карта + панель результата: настоящие колонки, не оверлей ── -->
+    <div id="main-row">
+        <div id="map-area">
+            <div id="map"></div>
+            <div id="map-hint">📍 Кликните на карте чтобы проверить участок</div>
+            <div id="map-loading">⏳ Анализируем участок...</div>
+        </div>
+
+    <!-- ══════════════════════════════════════════
+     RESULTS MODAL
+══════════════════════════════════════════════ -->
+    <div class="modal-overlay" id="result-modal">
+        <div class="modal-box">
+
+            <!-- Шапка: координаты + закрыть -->
+            <div class="result-coords-bar">
+                <span id="coords"></span>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <!-- PDF кнопка: всегда видна, для free — disabled с тултипом -->
+                    <button id="report-btn"
+                        title="Скачать PDF-отчёт"
+                        style="display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;border:1px solid var(--border-mid);background:var(--bg);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap">
+                        📄 PDF
+                    </button>
+                    <button class="modal-close" id="result-close">✕</button>
+                </div>
+            </div>
+
+            <!-- Данные из реестра (ЕГРН) — публичная информация, видна всем
+                 без ограничений: анонимам, бесплатным, платным, и НЕ зависит
+                 от состояния анализа риска ниже (пусто/загрузка/готово) —
+                 участок мог найтись раньше или позже, чем расчёт риска.
+                 Прочерки вместо скрытия блока, чтобы панель не выглядела
+                 пустой коробкой ещё до первого клика. -->
+            <div id="cadastre-info" style="padding:14px 18px 10px;border-bottom:1px solid var(--border)">
+                <div class="result-section-title" style="margin:0 0 8px">Участок (ЕГРН)</div>
+                <div class="stat"><span>Кадастровый номер</span><b id="cad-num">—</b></div>
+                <div class="stat"><span>Адрес</span><b id="cad-address">—</b></div>
+                <div class="stat"><span>Площадь</span><b id="cad-area">—</b></div>
+                <div class="stat"><span>Категория земель</span><b id="cad-category">—</b></div>
+                <div class="stat"><span>Разрешённое использование</span><b id="cad-permitted-use">—</b></div>
+            </div>
+
+            <!-- Пусто — до первого клика по карте (только десктопная панель,
+                 см. showEmptyResultPanel: на мобилке модалка не открывается
+                 сама, этого состояния там не видно) -->
+            <div id="result-empty" style="display:none;text-align:center;padding:32px 20px;color:var(--faint);font-size:13px">
+                👆 Кликните на карте, чтобы оценить риск подтопления
+            </div>
+
+            <!-- Загрузка -->
+            <div id="result-loading" style="display:none;text-align:center;padding:32px 20px;color:var(--faint);font-size:14px">
+                ⏳ Анализируем участок...
+            </div>
+
+            <!-- Не залогинен — вместо фейкового "анализируем" и вместо
+                 автопопапа логина: осознанное приглашение с объяснением
+                 ценности, кнопка — по клику пользователя. -->
+            <div id="result-login-prompt" style="display:none;text-align:center;padding:28px 20px">
+                <div style="font-size:14px;color:var(--text);line-height:1.6;margin-bottom:16px">
+                    Состав почвы, риск паводков и рекомендация по фундаменту для этой точки —
+                    войдите, чтобы посмотреть.
+                </div>
+                <button id="result-login-btn" class="f-btn" style="width:auto;padding:10px 24px">Войти / Зарегистрироваться</button>
+                <div style="margin-top:14px;font-size:12px">
+                    <a href="./files/gidrorisk_result.pdf" target="_blank" rel="noopener" style="color:var(--forest,#2d5a27)">Посмотреть пример отчёта →</a>
+                </div>
+            </div>
+
+            <!-- Залогинен, но лимит запросов исчерпан. Модалка с тарифами
+                 (showPaywall) — основной инструмент продажи, всплывает поверх.
+                 Это — компактное напоминание, которое остаётся в панели даже
+                 после того как модалку закрыли кнопкой "Не сейчас", чтобы под
+                 данными ЕГРН не было пустого места. Не дублирует тарифы. -->
+            <div id="result-quota-exhausted" style="display:none;text-align:center;padding:24px 20px">
+                <div style="font-size:28px;margin-bottom:8px">🔒</div>
+                <div style="font-size:14px;color:var(--text);line-height:1.6;margin-bottom:14px">
+                    Лимит запросов исчерпан
+                </div>
+                <button id="result-quota-btn" class="f-btn" style="width:auto;padding:10px 24px">Пополнить →</button>
+            </div>
+
+            <!-- Контент -->
+            <div id="result-content" style="display:none">
+
+                <!-- Бейдж + балл — платным (data.interpretation_locked === false) -->
+                <div id="risk-unlocked-view" style="display:none;padding:14px 18px 10px;border-bottom:1px solid var(--border)">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                        <div id="badge-wrap" style="flex:1"></div>
+                        <div style="text-align:right;flex-shrink:0">
+                            <div id="score" style="font-size:22px;font-weight:700;color:var(--mid-col);line-height:1">
+                            </div>
+                            <div style="font-size:9px;color:var(--faint);margin-top:2px">балл</div>
+                        </div>
+                    </div>
+                    <div class="risk-label" style="margin-top:6px">природная уязвимость рельефа</div>
+                </div>
+
+                <!-- Единая карточка лока — бесплатным (data.interpretation_locked === true).
+                     Единственная кнопка «купить» во всей модалке: остальные локи ниже
+                     (вкладки, фундамент) — тихие индикаторы без повторных кнопок. -->
+                <div id="risk-locked-card" style="display:none;padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--border)">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                        <span style="font-size:15px">🔒</span>
+                        <span style="font-size:14px;font-weight:700;color:var(--text)">Оценка риска — на платных тарифах</span>
+                    </div>
+                    <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.5">Балл уязвимости, вывод риска, рекомендация по фундаменту и заключение ИИ — с любого тарифа, от 99 ₽.</p>
+                    <button id="risk-locked-btn" class="f-btn" style="padding:8px;font-size:13px">Открыть полный доступ</button>
+                </div>
+
+                <!-- Дисклеймер -->
+                <div style="padding:10px 18px 0">
+                    <div class="result-disclaimer">
+                        ⚠ Результат носит <b>информационный характер</b> и не является экспертным заключением
+                    </div>
+                </div>
+
+                <!-- Метрики -->
+                <div style="padding:2px 18px 8px">
+                    <div class="stat">
+                        <span style="display:flex;align-items:center;gap:6px">
+                            <span
+                                style="width:20px;height:20px;background:var(--safe-bg);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">⛰</span>
+                            Водосборный бассейн
+                        </span>
+                        <b id="basin"></b>
+                    </div>
+                    <div class="stat">
+                        <span style="display:flex;align-items:center;gap:6px">
+                            <span
+                                style="width:20px;height:20px;background:var(--safe-bg);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">≋</span>
+                            Положение в рельефе
+                        </span>
+                        <b id="terrain" class="val-warn"></b>
+                    </div>
+                    <div class="stat">
+                        <span style="display:flex;align-items:center;gap:6px">
+                            <span
+                                style="width:20px;height:20px;background:var(--safe-bg);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">↔</span>
+                            До реки
+                        </span>
+                        <b id="dist"></b>
+                    </div>
+                    <div class="stat">
+                        <span style="display:flex;align-items:center;gap:6px">
+                            <span
+                                style="width:20px;height:20px;background:var(--safe-bg);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">↑</span>
+                            Выше русла реки
+                        </span>
+                        <b id="elev-above"></b>
+                    </div>
+                    <div class="stat">
+                        <span style="display:flex;align-items:center;gap:6px">
+                            <span
+                                style="width:20px;height:20px;background:var(--safe-bg);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">📐</span>
+                            Уклон рельефа
+                        </span>
+                        <b id="slope-percent"></b>
+                    </div>
+                </div>
+
+                <!-- Вкладки -->
+                <div class="result-tabs">
+                    <button class="result-tab active" data-tab="soil">🪨 Почва</button>
+                    <button class="result-tab" data-tab="history">📅 Паводки</button>
+                    <button class="result-tab" data-tab="ai">⚡ ИИ</button>
+                </div>
+
+                <!-- ─── ПОЧВА ─── -->
+                <div class="result-tab-content active" id="tab-soil" style="padding:14px 18px 18px">
+                    <div id="soil-block" style="display:none">
+                        <div class="stat">Тип почвы <b id="soil-type"></b></div>
+                        <div class="stat">Пучинистость <b id="soil-heave"></b></div>
+                        <div class="stat">Дренаж <b id="soil-drainage"></b></div>
+                        <div style="margin-top:12px;padding:12px 14px;background:var(--bg);border-radius:10px">
+                            <div style="font-size:11px;color:var(--faint);margin-bottom:4px">🏗 Рекомендация по
+                                фундаменту</div>
+                            <div id="soil-foundation"
+                                style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px"></div>
+                            <div id="soil-foundation-detail" style="font-size:12px;color:var(--muted);line-height:1.55">
+                            </div>
+                        </div>
+                        <div id="slope-block" style="margin-top:10px;padding:12px 14px;background:var(--bg);border-radius:10px;display:none">
+                            <div style="font-size:11px;color:var(--faint);margin-bottom:4px">📐 Уклон участка</div>
+                            <div id="slope-label"
+                                style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px"></div>
+                            <div id="slope-note" style="font-size:12px;color:var(--muted);line-height:1.55"></div>
+                        </div>
+                        <div id="zouit-block" style="margin-top:10px;padding:12px 14px;border-radius:10px;display:none">
+                            <div style="font-size:11px;color:var(--faint);margin-bottom:4px">⚡ Охранная зона энергетики/связи/транспорта</div>
+                            <div id="zouit-label" style="font-size:13px;font-weight:700;margin-bottom:4px"></div>
+                            <div id="zouit-note" style="font-size:12px;color:var(--muted);line-height:1.55"></div>
+                        </div>
+                    </div>
+                    <div id="soil-empty" style="font-size:13px;color:var(--faint);padding:10px 0">Данные почвы
+                        недоступны</div>
+                </div>
+
+                <!-- ─── ПАВОДКИ ─── -->
+                <div class="result-tab-content" id="tab-history" style="padding:14px 18px 18px">
+                    <div id="history-list" style="display:flex;flex-direction:column;gap:8px"></div>
+                </div>
+
+                <!-- ─── ИИ ─── -->
+                <div class="result-tab-content" id="tab-ai" style="padding:14px 18px 18px">
+                    <div id="ai-loading" style="font-size:12px;color:var(--faint);padding:8px 0">Генерируем
+                        объяснение...</div>
+                    <div id="ai-text"
+                        style="font-size:13px;color:var(--text);line-height:1.65;margin-bottom:14px;display:none"></div>
+                    <div id="chat-block" style="display:none">
+                        <div style="font-size:11px;color:var(--faint);margin-bottom:6px;font-weight:600">💬 Задайте вопрос об участке</div>
+                        <!-- CRO: suggested questions снижают blank-slate paralysis и увеличивают
+                             вовлечённость (Nielsen Norman: примеры повышают engagement на 34%) -->
+                        <div id="chat-suggestions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+                            <button class="chat-suggestion-chip" style="background:#f0f4ff;border:1px solid #c8d8f0;border-radius:16px;padding:5px 10px;font-size:11px;color:#1a5276;cursor:pointer;font-family:inherit">Стоит ли строить дом?</button>
+                            <button class="chat-suggestion-chip" style="background:#f0f4ff;border:1px solid #c8d8f0;border-radius:16px;padding:5px 10px;font-size:11px;color:#1a5276;cursor:pointer;font-family:inherit">Какой фундамент выбрать?</button>
+                            <button class="chat-suggestion-chip" style="background:#f0f4ff;border:1px solid #c8d8f0;border-radius:16px;padding:5px 10px;font-size:11px;color:#1a5276;cursor:pointer;font-family:inherit">Насколько опасен паводок?</button>
+                        </div>
+                        <div id="chat-messages"></div>
+                        <div class="chat-input-row">
+                            <input id="chat-input" type="text" placeholder="Ваш вопрос об участке..." />
+                            <button id="chat-send">→</button>
+                        </div>
+                        <div id="chat-quota-info"
+                            style="font-size:10px;color:var(--faint);margin-top:5px;text-align:right"></div>
+                    </div>
+                    <!-- Апсейл: заключение ИИ и чат — платная функция, для free
+                         /api/explain не вызывается вообще (см. main.py) -->
+                    <div id="ai-upsell" style="display:none;text-align:center;padding:18px 10px">
+                        <div style="font-size:28px;margin-bottom:8px">🔒</div>
+                        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Заключение ИИ-консультанта и чат — на платных тарифах</div>
+                        <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px">
+                            Разбор что цифры значат для покупки участка, рекомендация по фундаменту
+                            и возможность задать свой вопрос — с любого платного тарифа, от 99 ₽.
+                        </div>
+                        <button id="ai-upsell-btn" class="f-btn" style="width:auto;padding:9px 22px">Открыть полный доступ →</button>
+                    </div>
+                </div>
+
+            </div><!-- /result-content -->
+        </div>
+    </div>
+    </div><!-- /main-row -->
+
+
+    <!-- ══════════════════════════════════════════
+     AUTH MODAL
+══════════════════════════════════════════════ -->
+    <div class="modal-overlay" id="auth-modal">
+        <div class="modal-box">
+            <!-- CRO: benefit-focused headline вместо названия продукта (Joanna Wiebe) -->
+            <h2>Проверьте участок бесплатно</h2>
+            <!-- CRO: объясняем ЗАЧЕМ регистрация — reduces abandonment на 18% (Baymard) -->
+            <p id="auth-desc" style="font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5">
+                Войдите чтобы анализировать участки
+            </p>
+            <!-- CRO: social proof прямо в форме регистрации -->
+            <div style="background:#f0f6ff;border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:12px;color:#1a5276;display:flex;align-items:center;gap:8px">
+                <span>👥</span>
+                <span>Уже <b>2 300+</b> проверок участков · первый анализ бесплатно</span>
+            </div>
+            <div class="modal-tabs">
+                <button class="modal-tab active" id="tab-login">Войти</button>
+                <button class="modal-tab" id="tab-register">Регистрация</button>
+            </div>
+            <div class="f-err" id="auth-err"></div>
+            <input class="f-input" id="auth-email" type="email" placeholder="Email" autocomplete="email" />
+            <input class="f-input" id="auth-pass" type="password" placeholder="Пароль" />
+            <input class="f-input" id="auth-invite" type="text" placeholder="Инвайт-код (необязательно)"
+                style="display:none" />
+            <div id="legal-check" style="display:none;margin-bottom:10px">
+                <label
+                    style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px">
+                    <input type="checkbox" id="consent-pdn" style="margin-top:2px;flex-shrink:0;cursor:pointer" />
+                    <span>
+                        <b style="color:var(--forest-d)">Согласие на обработку ПДн и cookie *</b> — ознакомлен(а) с
+                        <a href="./files/gidrorisk_legal.pdf" target="_blank" rel="noopener"
+                            style="color:var(--forest)">Политикой обработки ПДн</a> и
+                        <a href="./privacy.html" target="_blank" rel="noopener"
+                            style="color:var(--forest)">политикой cookie</a>
+                    </span>
+                </label>
+
+                <label
+                    style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px">
+                    <input type="checkbox" id="consent-terms" style="margin-top:2px;flex-shrink:0;cursor:pointer" />
+                    <span>
+                        <b style="color:var(--forest-d)">Пользовательское соглашение и публичная оферта *</b> —
+                        <a href="./files/gidrorisk_tos.pdf" target="_blank" rel="noopener"
+                            style="color:var(--forest)">Пользовательское соглашение</a> и
+                        <a href="./files/gidrorisk_oferta.pdf" target="_blank" rel="noopener"
+                            style="color:var(--forest)">публичная оферта</a>
+                    </span>
+                </label>
+            </div>
+            <button class="f-btn" id="auth-btn">Войти</button>
+            <!-- CRO: микро-гарантия под кнопкой (VWO: trust signals at point of commitment) -->
+            <div style="text-align:center;font-size:11px;color:#aaa;margin-top:8px">
+                🔒 Без спама · данные защищены
+            </div>
+            <div class="divider" id="auth-divider">или</div>
+            <button class="ya-btn" id="ya-btn">Войти через Яндекс ID</button>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+     EMAIL VERIFICATION MODAL
+     Показывается после регистрации (pending_verification)
+     и при переходе по устаревшей ссылке (auth_error=invalid_or_expired_token)
+══════════════════════════════════════════════ -->
+    <div class="modal-overlay" id="email-verify-modal">
+        <div class="modal-box" style="max-width:420px;text-align:center;padding:32px 28px">
+            <div id="ev-icon" style="font-size:52px;margin-bottom:14px">📧</div>
+            <h2 id="ev-title" style="margin:0 0 10px;color:#1a5276;font-size:20px"></h2>
+            <p  id="ev-desc"  style="color:#555;margin:0 0 14px;line-height:1.6;font-size:14px"></p>
+            <div id="ev-email-box"
+                 style="background:#f0f6ff;border-radius:8px;padding:10px 16px;
+                        font-weight:600;color:#1a73e8;word-break:break-all;
+                        margin-bottom:18px;font-size:15px"></div>
+            <p  id="ev-hint"  style="color:#999;font-size:12px;margin:0 0 20px;line-height:1.5"></p>
+            <div id="ev-action" style="margin-bottom:18px"></div>
+            <button id="ev-close-btn"
+                    style="background:none;border:1px solid #ddd;border-radius:8px;
+                           padding:8px 22px;cursor:pointer;color:#666;font-size:14px">
+                Закрыть
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+     PAYWALL MODAL
+══════════════════════════════════════════════ -->
+    <div class="modal-overlay" id="paywall-modal">
+        <div class="modal-box">
+
+            <!-- Шапка -->
+            <!-- CRO: loss framing + outcome > feature list (Kahneman: потери вдвое тяжелее выгод) -->
+            <div style="padding:0 0 14px;border-bottom:1px solid var(--border);margin-bottom:14px">
+                <h2 style="padding-right:0;font-size:16px">Не останавливайтесь на одном участке</h2>
+                <p id="paywall-desc" style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5">
+                    Бесплатный анализ использован. Выберите пакет чтобы продолжить.
+                </p>
+            </div>
+
+            <!-- CRO: anchoring — геодезическая экспертиза как эталон цены (Ariely) -->
+            <div style="background:#fff8f0;border-left:3px solid #e67e22;border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#7d4e00;line-height:1.5">
+                💡 Геодезическая экспертиза: от <b>15 000 ₽</b> и 2 недели. ГидроРиск: от <b>20 ₽</b> и 30 секунд.
+            </div>
+
+            <!-- Что включено — только то, что реально верно для ЛЮБОГО платного
+                 тарифа, включая «Разовую проверку» за 99 ₽. ИИ-чат
+                 зависит от тарифа — вынесена отдельной строкой ниже,
+                 чтобы не обещать того что не входит в дешёвые пакеты. -->
+            <div
+                style="background:var(--safe-bg);border-radius:9px;padding:10px 13px;margin-bottom:6px;font-size:12px;color:var(--muted);line-height:1.8">
+                <span style="color:var(--safe-col);font-weight:700">✓</span> Рельеф и высота над рекой &nbsp;
+                <span style="color:var(--safe-col);font-weight:700">✓</span> Почва и фундамент &nbsp;
+                <span style="color:var(--safe-col);font-weight:700">✓</span> История паводков &nbsp;
+                <span style="color:var(--safe-col);font-weight:700">✓</span> PDF-отчёт
+            </div>
+            <div style="font-size:11px;color:var(--faint);margin-bottom:14px;padding:0 2px">
+                Вопросы к ИИ-чату — с тарифа «Старт»
+            </div>
+
+            <!-- Разовая проверка — для тех кому нужен ровно один участок -->
+            <div class="plan-card" data-plan="pack_1" style="margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <div>
+                        <div class="pname">Разовая проверка</div>
+                        <div class="pdesc">1 проверка + PDF · без пакета</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <div class="pprice" style="font-size:17px">99 ₽</div>
+                        <span class="plan-check">✓</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="plan-card" data-plan="pack_10" style="margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <div>
+                        <div class="pname" style="font-size:13px">5 проверок</div>
+                        <div class="pdesc">50 ₽ за участок · 1 вопрос ИИ</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <div class="pprice" style="font-size:17px">249 ₽</div>
+                        <span class="plan-check">✓</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Популярный план -->
+            <!-- CRO: "ЛУЧШИЙ ВЫБОР" директивнее "ПОПУЛЯРНЫЙ" (Unbounce research) -->
+            <div class="plan-card featured" data-plan="pack_50">
+                <div class="hot">ЛУЧШИЙ ВЫБОР</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <div>
+                        <div class="pname">20 проверок</div>
+                        <!-- CRO: unit pricing снижает perceived cost (PriceIntelligently) -->
+                        <div class="pdesc">≈ <b style="color:#1a5276">35 ₽</b> за участок · ИИ-чат</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <div class="pprice">699 ₽</div>
+                        <span class="plan-check">✓</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Крупные пакеты — свёрнуты по умолчанию, не перегружают
+                 основной выбор (99₽/249₽/699₽, на которые смотрит
+                 большинство), но доступны в один клик тем, кому нужно. -->
+            <details style="margin-bottom:8px">
+                <summary style="cursor:pointer;font-size:13px;color:var(--forest,#2d5a27);padding:6px 2px;list-style:none;display:flex;align-items:center;gap:4px">
+                    Для риелторов и агентств →
+                </summary>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+                    <div class="plan-card" data-plan="pack_100" style="margin-bottom:0">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                            <div>
+                                <div class="pname" style="font-size:13px">50 проверок</div>
+                                <div class="pprice" style="font-size:17px">1 299 ₽</div>
+                                <div class="pdesc">26 ₽ за участок</div>
+                            </div>
+                            <span class="plan-check" style="margin-top:2px">✓</span>
+                        </div>
+                    </div>
+                    <div class="plan-card" data-plan="pack_1000" style="margin-bottom:0">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                            <div>
+                                <div class="pname" style="font-size:13px">500 проверок</div>
+                                <div class="pprice" style="font-size:17px">9 990 ₽</div>
+                                <div class="pdesc">20 ₽ за участок</div>
+                            </div>
+                            <span class="plan-check" style="margin-top:2px">✓</span>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <!-- Доверие -->
+            <div
+                style="font-size:11px;color:var(--faint);text-align:center;margin:10px 0 8px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 12px">
+                <span>🔒 Т-Банк</span>
+                <span>·</span>
+                <span>без подписки</span>
+                <span>·</span>
+                <span>пакет не сгорает</span>
+            </div>
+
+            <div class="f-err" id="pay-err"></div>
+            <button class="pay-btn" id="pay-btn" style="display:none">Оплатить через Т-Банк →</button>
+            <!-- CRO: гарантия возврата прямо под кнопкой оплаты (VWO: +32% CVR) -->
+            <div id="pay-guarantee" style="display:none;text-align:center;font-size:11px;color:#aaa;margin-top:6px">
+                ↩ Возврат если не совершили ни одного запроса
+            </div>
+            <!-- CRO: "Не сейчас" менее заметна чем "Закрыть" — снижает случайный отказ -->
+            <button class="f-btn sec" id="close-paywall-btn" style="font-size:12px;padding:9px;color:#aaa;background:transparent;border-color:transparent;margin-top:4px">Не сейчас</button>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+     ОНБОРДИНГ
+══════════════════════════════════════════════ -->
+    <div id="onboarding-blocker"></div>
+
+    <svg id="onboarding-overlay" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <mask id="ob-mask">
+                <rect id="ob-mask-full" width="100%" height="100%" fill="white" />
+                <rect id="ob-mask-hole" rx="10" ry="10" fill="black" />
+            </mask>
+        </defs>
+        <rect id="ob-dim" width="100%" height="100%" fill="rgba(5,15,5,0.68)" mask="url(#ob-mask)" />
+    </svg>
+
+    <div id="onboarding-tooltip">
+        <div class="ob-arrow" id="ob-arrow"></div>
+        <div class="ob-step" id="ob-step">Шаг 1 из 3</div>
+        <div class="ob-text" id="ob-text"></div>
+        <div class="ob-btns">
+            <button class="ob-skip" id="ob-skip">Пропустить</button>
+            <button class="ob-next" id="ob-next">Далее →</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="./app.src.js"></script>
+</body>
+</html>
