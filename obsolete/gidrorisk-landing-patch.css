@@ -1,0 +1,235 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   ГидроРиск — патч лендинга v2.0
+   Подключить в gidrorisk_landing.html после основного <style>:
+   <link rel="stylesheet" href="/static/gidrorisk-landing-patch.css">
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Новые дизайн-токены ───────────────────────────────────────────── */
+:root {
+  /* Перезаписываем старую тёмно-синюю палитру */
+  --ink:         #f4f6f0;   /* bg теперь светлый */
+  --deep:        #e8f0e4;
+  --mid:         #d4e4ce;
+  --accent:      #2d5a27;   /* лесной зелёный вместо синего */
+  --bright:      #3d7a35;
+  --warn:        #c0392b;   /* красный — только для высокого риска */
+  --safe:        #2d6a2d;
+  --text:        #1c2b1a;
+  --muted:       #5a6e55;
+  --white:       #1c2b1a;   /* "белый" в хедере теперь тёмный текст */
+  --card-bg:     rgba(0,0,0,0.03);
+  --card-border: rgba(0,0,0,0.08);
+
+  /* Новые */
+  --river:       #2a6496;
+  --sand:        #f0ece4;
+  --faint:       #9aad96;
+}
+
+/* ── 2. Фон и типографика ─────────────────────────────────────────────── */
+body { background: var(--ink); color: var(--text); }
+
+h1, h2, h3 { color: var(--text); }
+h1 .accent { color: var(--river); }   /* "риск затопления" — синим, как вода */
+h1 .warn   { color: var(--warn); }
+
+/* ── 3. Навбар ────────────────────────────────────────────────────────── */
+nav {
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  backdrop-filter: none;
+}
+
+.logo { color: var(--text); }
+.logo-icon { background: var(--accent); }
+.nav-links a { color: var(--muted); }
+.nav-links a:hover { color: var(--text); }
+.nav-cta { background: var(--accent) !important; }
+.nav-cta:hover { background: var(--bright) !important; box-shadow: none; }
+
+/* ── 4. Хиро ──────────────────────────────────────────────────────────── */
+.hero { background: var(--ink); }
+.hero-bg {
+  background:
+    radial-gradient(ellipse 70% 60% at 65% 40%, rgba(42,100,150,0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 50% at 15% 85%, rgba(45,90,39,0.05) 0%, transparent 60%),
+    var(--ink);
+}
+
+/* Волны — делаем зеленоватыми */
+.wave-lines { opacity: 0.08; }
+
+/* Бейдж */
+.hero-badge {
+  background: #eaf4e8;
+  border-color: #b4d8b2;
+  color: #2d6a2d;
+}
+.hero-badge::before { background: #2d6a2d; }
+
+/* Субзаголовок */
+.hero-sub { color: var(--muted); }
+
+/* Кнопки */
+.btn-primary {
+  background: var(--accent);
+  box-shadow: 0 8px 28px rgba(45,90,39,0.3);
+}
+.btn-primary:hover {
+  background: var(--bright);
+  box-shadow: 0 12px 36px rgba(45,90,39,0.45);
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid rgba(0,0,0,0.14);
+}
+.btn-secondary:hover {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.25);
+}
+
+/* Статы */
+.hero-stat .num { color: var(--text); }
+.hero-stat .lbl { color: var(--faint); }
+
+/* ── 5. Мокап-карточка хиро ───────────────────────────────────────────── */
+.mockup-card {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.04);
+}
+.mockup-header { background: var(--deep); border-bottom: 1px solid rgba(0,0,0,0.07); }
+.mockup-title  { color: var(--faint); }
+.mockup-body   { background: white; }
+
+/* Псевдо-карта в мокапе */
+.mockup-map {
+  background: linear-gradient(135deg, #dde8d8 0%, #c8dbc0 100%);
+}
+.mockup-map::before {
+  background-image:
+    linear-gradient(rgba(45,90,39,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45,90,39,0.07) 1px, transparent 1px);
+}
+
+/* Река в мокапе */
+.map-river {
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(42,100,150,0.35),
+    rgba(42,100,150,0.6),
+    rgba(42,100,150,0.35),
+    transparent
+  );
+}
+.map-river-label { color: rgba(42,100,150,0.8); }
+
+/* Маркер — зелёный, не оранжевый */
+.map-marker-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(45,90,39,0.2);
+}
+@keyframes markerPulse {
+  0%,100% { box-shadow: 0 0 0 4px rgba(45,90,39,0.2); }
+  50%      { box-shadow: 0 0 0 10px rgba(45,90,39,0.06); }
+}
+
+/* Бейдж риска в мокапе — умеренный по умолчанию */
+.mockup-risk {
+  background: #fef6e4;
+  border: 1px solid #f0d090;
+}
+.risk-label-m { color: var(--faint); }
+.risk-badge-m {
+  background: #fef6e4;
+  color: #b37309;
+  border: 1.5px solid #f0d090;
+  border-radius: 8px;
+  font-family: 'Golos Text', inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+}
+
+/* Статы в мокапе */
+.mockup-stats > div {
+  background: var(--ink);
+  border-radius: 8px;
+}
+
+/* ── 6. Секции ────────────────────────────────────────────────────────── */
+.section-bg     { background: #ffffff; }
+.section-alt    { background: var(--sand); }
+
+h2 { color: var(--text); }
+.section-label { color: var(--faint); }
+
+/* ── 7. Карточки фич ──────────────────────────────────────────────────── */
+.feature-card, .feature-icon-card {
+  background: var(--ink);
+  border: 1px solid rgba(0,0,0,0.07);
+}
+.feature-icon { background: var(--accent); }
+
+/* ── 8. Таблица факторов ──────────────────────────────────────────────── */
+.factor-table-row { border-bottom: 1px solid rgba(0,0,0,0.06); }
+.factor-source-pill {
+  background: #eaf4e8;
+  color: #2d6a2d;
+  border: 1px solid #b4d8b2;
+  font-size: 10px; padding: 2px 9px;
+  border-radius: 6px; font-weight: 600;
+}
+
+/* ── 9. Тарифы ────────────────────────────────────────────────────────── */
+.pricing-card {
+  background: white;
+  border: 1.5px solid rgba(0,0,0,0.1);
+}
+.pricing-card.featured {
+  border-color: var(--accent);
+  background: #f7fbf6;
+}
+.pricing-card .hot {
+  background: var(--accent);
+  border-radius: 8px;
+}
+.pricing-card .amount { color: var(--text); }
+.pricing-card .cta-btn-card {
+  background: var(--accent);
+}
+.pricing-card .cta-btn-card:hover { background: var(--bright); }
+.pricing-card .cta-btn-sec { background: var(--ink); color: var(--accent); }
+
+/* ── 10. CTA-блок ─────────────────────────────────────────────────────── */
+.cta-section {
+  background: var(--accent);
+}
+.cta-section h2, .cta-section p { color: rgba(255,255,255,0.9); }
+.cta-section .cta-btn {
+  background: white;
+  color: var(--accent);
+}
+.cta-section .cta-btn:hover { background: var(--ink); }
+
+/* ── 11. FAQ / Аккордеон ──────────────────────────────────────────────── */
+.faq-item { border-bottom: 1px solid rgba(0,0,0,0.07); }
+.faq-q { color: var(--text); font-weight: 600; }
+.faq-a { color: var(--muted); }
+
+/* ── 12. Футер ────────────────────────────────────────────────────────── */
+footer {
+  background: #1c2b1a;
+  color: rgba(255,255,255,0.6);
+}
+footer .logo { color: white; }
+footer a { color: rgba(255,255,255,0.5); }
+footer a:hover { color: white; }
+
+/* ── 13. Мобильная адаптация ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-visual { display: none; }   /* мокап скрываем — нет места */
+  .hero-content { max-width: 100%; }
+  h1 { font-size: clamp(28px, 8vw, 42px); }
+}

@@ -1,0 +1,454 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   ГидроРиск — дизайн-патч v2.0
+   Подключить в index.html после основного <style>:
+   <link rel="stylesheet" href="/static/gidrorisk-app-patch.css">
+   (или вставить содержимое в конец тега <style>)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Google Font — Golos Text ──────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap');
+
+/* ── 2. Дизайн-токены ─────────────────────────────────────────────────── */
+:root {
+  /* Новая палитра — природно-земляная */
+  --gr-bg:       #f4f6f0;   /* светло-зелёный фон */
+  --gr-surface:  #ffffff;
+  --gr-border:   rgba(0,0,0,0.09);
+  --gr-text:     #1c2b1a;   /* тёмно-зелёный, читается на светлом */
+  --gr-muted:    #5a6e55;
+  --gr-faint:    #9aad96;
+  --gr-sand:     #f0ece4;   /* тёплый нейтральный */
+
+  --gr-forest:   #2d5a27;   /* основной акцент — лес */
+  --gr-forest-d: #245020;   /* hover */
+  --gr-river:    #2a6496;   /* вода */
+
+  /* Статусы — семантические, не кричащие */
+  --gr-high:     #c0392b;
+  --gr-high-bg:  #fdf0ec;
+  --gr-high-bdr: #e8b4a8;
+  --gr-mid:      #b37309;
+  --gr-mid-bg:   #fef6e4;
+  --gr-mid-bdr:  #f0d090;
+  --gr-low:      #2d6a2d;
+  --gr-low-bg:   #eaf4e8;
+  --gr-low-bdr:  #a8d4a6;
+}
+
+/* ── 3. Базовый шрифт ─────────────────────────────────────────────────── */
+body {
+  font-family: 'Golos Text', system-ui, -apple-system, sans-serif;
+  background: var(--gr-bg);
+  color: var(--gr-text);
+}
+
+/* ── 4. Хедер ─────────────────────────────────────────────────────────── */
+#header {
+  background: var(--gr-surface);
+  color: var(--gr-text);
+  border-bottom: 1px solid var(--gr-border);
+  padding: 10px 16px;
+}
+
+#header h1 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gr-text);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Иконка-логотип перед названием */
+#header h1::before {
+  content: '≋';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; height: 24px;
+  background: var(--gr-forest);
+  color: white;
+  border-radius: 7px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+#region-select {
+  background: var(--gr-bg);
+  border: 1px solid var(--gr-border);
+  color: var(--gr-text);
+  border-radius: 8px;
+  font-family: inherit;
+}
+#region-select option { background: white; color: var(--gr-text); }
+
+/* ── 5. User bar ──────────────────────────────────────────────────────── */
+#user-bar {
+  background: var(--gr-bg);
+  color: var(--gr-faint);
+  border-bottom: 1px solid var(--gr-border);
+  font-size: 11px;
+  padding: 5px 16px;
+}
+
+#user-bar .ub-email { opacity: 1; color: var(--gr-muted); }
+
+#user-bar .ub-plan {
+  background: var(--gr-forest);
+  color: white;
+  border-radius: 7px;
+  padding: 2px 9px;
+  font-size: 10px;
+  font-weight: 700;
+}
+/* убираем старый стиль paid — теперь единый */
+#user-bar .ub-plan.paid { background: var(--gr-forest); }
+
+#ub-quota.warn { color: var(--gr-mid); font-weight: 700; }
+
+#login-btn {
+  background: var(--gr-forest);
+  color: white;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 14px;
+  border: none;
+}
+#login-btn:hover { background: var(--gr-forest-d); }
+
+#logout-btn {
+  background: transparent;
+  color: var(--gr-faint);
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 8px;
+  font-size: 11px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+#logout-btn:hover { color: var(--gr-text); border-color: rgba(0,0,0,0.35); }
+
+/* ── 6. Подсказка на карте ────────────────────────────────────────────── */
+#map-hint {
+  background: rgba(28, 43, 26, 0.82);
+  backdrop-filter: blur(8px);
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── 7. Индикатор загрузки ────────────────────────────────────────────── */
+#map-loading {
+  font-family: inherit;
+  color: var(--gr-forest);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+}
+
+/* ── 8. Модалки (общая оболочка) ──────────────────────────────────────── */
+.modal-box {
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.16);
+  font-family: inherit;
+}
+
+.modal-close {
+  background: rgba(0,0,0,0.06);
+  color: var(--gr-muted);
+}
+.modal-close:hover { background: rgba(0,0,0,0.12); }
+
+.modal-box h2 { color: var(--gr-text); font-size: 17px; }
+
+/* ── 9. Auth modal ────────────────────────────────────────────────────── */
+.modal-tabs { border: 1px solid var(--gr-border); border-radius: 10px; }
+.modal-tab { background: var(--gr-bg); color: var(--gr-muted); font-family: inherit; }
+.modal-tab.active { background: var(--gr-forest); color: white; font-weight: 600; }
+
+.f-input {
+  border: 1px solid var(--gr-border);
+  border-radius: 9px;
+  font-family: inherit;
+  color: var(--gr-text);
+  background: var(--gr-bg);
+}
+.f-input:focus { border-color: var(--gr-forest); box-shadow: 0 0 0 3px rgba(45,90,39,0.12); }
+
+.f-btn {
+  background: var(--gr-forest);
+  border-radius: 10px;
+  font-family: inherit;
+  font-weight: 600;
+}
+.f-btn:hover { background: var(--gr-forest-d); }
+.f-btn.sec { background: var(--gr-bg); color: var(--gr-text); border: 1px solid var(--gr-border); }
+.f-btn.sec:hover { background: var(--gr-sand); }
+
+.f-err { color: var(--gr-high); }
+
+/* Яндекс-кнопка — оставляем брендовой */
+.ya-btn { border-radius: 10px; font-family: inherit; }
+
+/* ── 10. Paywall ──────────────────────────────────────────────────────── */
+.plan-card {
+  border: 1.5px solid var(--gr-border);
+  border-radius: 14px;
+  background: white;
+}
+.plan-card:hover, .plan-card.selected { border-color: var(--gr-forest); }
+.plan-card.featured { background: #f7fbf6; border-color: var(--gr-forest); }
+
+.plan-card .hot {
+  background: var(--gr-forest);
+  border-radius: 8px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+.plan-card .pname { color: var(--gr-text); font-weight: 700; }
+.plan-card .pprice { color: var(--gr-forest); }
+.plan-card .pdesc  { color: var(--gr-faint); }
+
+.pay-btn {
+  background: var(--gr-forest);
+  border-radius: 10px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+}
+.pay-btn:hover { background: var(--gr-forest-d); }
+
+/* ── 11. Результаты — шапка модалки ──────────────────────────────────── */
+#result-modal .modal-box { max-width: 480px; }
+
+/* Координаты в шапке */
+.result-coords-bar {
+  background: var(--gr-bg);
+  border-bottom: 1px solid var(--gr-border);
+  padding: 12px 18px;
+  font-size: 11px;
+  color: var(--gr-faint);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Бейдж риска — переопределяем старые цвета */
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: inherit;
+  background: transparent;
+  border: 1.5px solid;
+}
+.risk-badge::before {
+  content: '';
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* Переопределяем старые badge-классы */
+.badge-red {
+  background: var(--gr-high-bg) !important;
+  color: var(--gr-high) !important;
+  border-color: var(--gr-high-bdr) !important;
+}
+.badge-orange, .badge-yellow {
+  background: var(--gr-mid-bg) !important;
+  color: var(--gr-mid) !important;
+  border-color: var(--gr-mid-bdr) !important;
+}
+.badge-green {
+  background: var(--gr-low-bg) !important;
+  color: var(--gr-low) !important;
+  border-color: var(--gr-low-bdr) !important;
+}
+
+.risk-label { color: var(--gr-faint); font-size: 11px; margin-top: 3px; }
+
+/* ── 12. Статы в результатах ──────────────────────────────────────────── */
+.stat {
+  font-size: 13px;
+  color: var(--gr-muted);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding: 9px 0;
+}
+.stat b { color: var(--gr-text); font-weight: 600; }
+
+/* Предупреждающее значение (прибрежная зона, маленькая высота) */
+.stat b.val-warn { color: var(--gr-mid); }
+
+/* ── 13. Вкладки результатов ──────────────────────────────────────────── */
+.result-tabs {
+  border-bottom: 1px solid var(--gr-border);
+  background: var(--gr-bg);
+  padding: 0 4px;
+  margin-top: 0;
+}
+.result-tab {
+  color: var(--gr-faint);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 9px 14px;
+  border-radius: 0;
+}
+.result-tab.active {
+  color: var(--gr-forest);
+  border-bottom-color: var(--gr-forest);
+  font-weight: 600;
+}
+.result-tab:hover:not(.active) { color: var(--gr-muted); }
+
+.result-section { border-top: 1px solid var(--gr-border); }
+.result-section-title { color: var(--gr-faint); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; }
+
+/* ── 14. Дисклеймер ───────────────────────────────────────────────────── */
+.result-disclaimer {
+  background: var(--gr-mid-bg);
+  border-left: 3px solid var(--gr-mid-bdr);
+  color: #8a6e20;
+  font-size: 11px;
+  border-radius: 0 6px 6px 0;
+}
+
+/* ── 15. Карточки паводков ────────────────────────────────────────────── */
+.flood-card {
+  background: var(--gr-mid-bg);
+  border-left: 3px solid var(--gr-mid-bdr);
+  border-radius: 0 10px 10px 0;
+}
+.flood-card-title { color: var(--gr-text); font-weight: 700; font-size: 13px; }
+.flood-card-desc  { color: var(--gr-muted); font-size: 12px; }
+.flood-card-src   { color: var(--gr-faint); font-size: 10px; }
+
+/* ── 17. ИИ-чат ───────────────────────────────────────────────────────── */
+.msg-user {
+  background: var(--gr-forest);
+  border-radius: 14px 14px 3px 14px;
+}
+.msg-ai {
+  background: var(--gr-bg);
+  color: var(--gr-text);
+  border: 1px solid var(--gr-border);
+  border-radius: 14px 14px 14px 3px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.msg-loading { color: var(--gr-faint); }
+
+.chat-input-row input {
+  border: 1px solid var(--gr-border);
+  background: var(--gr-bg);
+  border-radius: 9px;
+  color: var(--gr-text);
+  font-family: inherit;
+}
+.chat-input-row input:focus {
+  border-color: var(--gr-forest);
+  box-shadow: 0 0 0 3px rgba(45,90,39,0.1);
+  outline: none;
+}
+.chat-input-row button {
+  background: var(--gr-forest);
+  border-radius: 9px;
+}
+.chat-input-row button:hover { background: var(--gr-forest-d); }
+
+/* ── 18. Онбординг-тултип ─────────────────────────────────────────────── */
+#onboarding-tooltip {
+  background: var(--gr-text);
+  border-radius: 16px;
+  font-family: inherit;
+}
+#onboarding-tooltip .ob-step { color: var(--gr-faint); }
+.onboarding-highlight {
+  box-shadow: 0 0 0 3px var(--gr-forest), 0 0 0 6px rgba(45,90,39,0.2) !important;
+}
+#onboarding-tooltip .ob-next {
+  background: var(--gr-forest);
+  color: white;
+}
+#onboarding-tooltip .ob-next:hover { background: var(--gr-forest-d); }
+
+/* ─── Стрелки тултипа ─────────────────── */
+#onboarding-tooltip .ob-arrow.up   { border-bottom-color: var(--gr-text); }
+#onboarding-tooltip .ob-arrow.down { border-top-color: var(--gr-text); }
+#onboarding-tooltip .ob-arrow.left { border-right-color: var(--gr-text); }
+
+/* ── 19. Мобильная адаптация ──────────────────────────────────────────── */
+@media (max-width: 600px) {
+  #header h1 { font-size: 13px; }
+
+  /* Модалка результатов на мобиле — bottom sheet */
+  #result-modal {
+    align-items: flex-end;
+    padding: 0;
+  }
+  #result-modal .modal-box {
+    border-radius: 20px 20px 0 0;
+    max-width: 100%;
+    max-height: 85vh;
+  }
+
+  /* Рукоятка-хендл */
+  #result-modal .modal-box::before {
+    content: '';
+    display: block;
+    width: 36px; height: 4px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 2px;
+    margin: 10px auto 0;
+  }
+
+  /* Более компактные вкладки на мобиле */
+  .result-tab { padding: 8px 10px; font-size: 11px; }
+
+  /* Paywall bottom sheet */
+  #paywall-modal {
+    align-items: flex-end;
+    padding: 0;
+  }
+  #paywall-modal .modal-box {
+    border-radius: 20px 20px 0 0;
+    max-width: 100%;
+    padding-bottom: 32px; /* safe area */
+  }
+}
+
+/* ── 20. Вспомогательные утилиты (используются в JS-генерируемых элементах) */
+.gr-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 6px;
+  font-size: 11px; font-weight: 600;
+}
+.gr-tag-high   { background: var(--gr-high-bg);  color: var(--gr-high);  border: 1px solid var(--gr-high-bdr); }
+.gr-tag-mid    { background: var(--gr-mid-bg);   color: var(--gr-mid);   border: 1px solid var(--gr-mid-bdr); }
+.gr-tag-low    { background: var(--gr-low-bg);   color: var(--gr-low);   border: 1px solid var(--gr-low-bdr); }
+.gr-tag-info   { background: #e8f4fc; color: #1a5c96; border: 1px solid #9ecde8; }
+
+.gr-metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0;
+}
+.gr-metric {
+  background: var(--gr-bg);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.gr-metric .mv {
+  font-size: 16px; font-weight: 700;
+  color: var(--gr-text); line-height: 1.1;
+}
+.gr-metric .ml {
+  font-size: 10px; color: var(--gr-faint); margin-top: 2px;
+}
+.gr-metric.warn .mv { color: var(--gr-mid); }
