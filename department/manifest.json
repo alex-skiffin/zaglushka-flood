@@ -1,0 +1,10 @@
+{
+  "name": "Отдел Водоснабжения",
+  "category": "idle",
+  "description": "Idle-кликер про водоснабжение на Марсе: стройте инфраструктуру, прокачивайте навыки, запускайте ритуалы и превращайте пустыню в оазис.",
+  "logo": "logo.png",
+  "screenshots": ["screenshot-1.png", "screenshot-2.png", "screenshot-3.png"],
+  "maxAge": 0,
+  "developer": { "email": "dev@example.com" },
+  "mobileSupport": { "orientation": "landscape" }
+}

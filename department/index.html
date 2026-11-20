@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#1a1a1a" />
+    <link rel="icon" href="./icon.ico" />
+    <title>Отдел Водоснабжения</title>
+    <meta name="description" content="Idle-кликер про водоснабжение на Марсе" />
+    <style>
+      /* Nunito — округлый «конфетный» шрифт с кириллицей (Candy Crush / Funtique).
+         Файлы в public/fonts/; грузятся в BootScene до старта MainScene. */
+      @font-face {
+        font-family: 'Nunito';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('fonts/nunito-400.ttf') format('truetype');
+      }
+      @font-face {
+        font-family: 'Nunito';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url('fonts/nunito-700.ttf') format('truetype');
+      }
+      /* Russo One — игровой «аркадный» шрифт для заголовков панелей (Р13).
+         Один вес (400); субсет в public/fonts/ (кириллица + латиница + цифры). */
+      @font-face {
+        font-family: 'Russo One';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('fonts/russoone-400.ttf') format('truetype');
+      }
+      body {
+        margin: 0;
+        overflow: hidden;
+        /* Фон страницы = Phaser backgroundColor (#0a0a1a): при Scale.EXPAND
+           холст закрывает всё окно, но на долю секунды до/после resize и на
+           случай любого зазора видно не белый, а фон игры. */
+        background: #0a0a1a;
+        font-family: 'Nunito', 'Segoe UI', sans-serif;
+        /* Мобильные тапы: никакого браузерного выделения/зума/тап-хайлайта.
+           В портрете (тач) быстрые многократные тапы иначе выставляли
+           выделение «весь экран» (user-select) + dbl-tap-zoom. */
+        user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      canvas {
+        display: block;
+        user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: none; /* Phaser сам обрабатывает тапы; браузер — нет */
+      }
+    </style>
+    <!-- Слот для platform SDK-скрипта: vite.config.ts подставляет сюда
+         скрипт нужного SDK по таргету сборки (см. TARGETS в vite.config.ts);
+         для таргетов без внешнего скрипта слот остаётся пустым. -->
+    
+    <script type="module" crossorigin src="./assets/index-CKeennWS.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/phaser-0RJB29YE.js">
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>
