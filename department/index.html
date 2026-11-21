@@ -61,8 +61,30 @@
     <!-- Слот для platform SDK-скрипта: vite.config.ts подставляет сюда
          скрипт нужного SDK по таргету сборки (см. TARGETS в vite.config.ts);
          для таргетов без внешнего скрипта слот остаётся пустым. -->
-    
-    <script type="module" crossorigin src="./assets/index-CKeennWS.js"></script>
+    <script>
+(function () {
+  try {
+    var rid = { request_id: "early_vk_init_1" };
+    if (window.AndroidBridge && typeof window.AndroidBridge.VKWebAppInit === "function") {
+      window.AndroidBridge.VKWebAppInit(JSON.stringify(rid));
+      return;
+    }
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.VKWebAppInit) {
+      window.webkit.messageHandlers.VKWebAppInit.postMessage(rid);
+      return;
+    }
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        handler: "VKWebAppInit",
+        params: rid,
+        type: "vk-connect",
+        connectVersion: "3.0.2"
+      }, "*");
+    }
+  } catch (e) { /* вне VK-контейнера — no-op */ }
+})();
+</script>
+    <script type="module" crossorigin src="./assets/index-BT0qfQiV.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/phaser-0RJB29YE.js">
   </head>
   <body>
